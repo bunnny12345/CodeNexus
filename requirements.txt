@@ -1,0 +1,10 @@
+streamlit
+google-genai
+chromadb
+duckduckgo_search
+pyautogui
+Pillow
+python-dotenv
+GitPython
+requests
+mcp
