@@ -416,11 +416,11 @@ with st.sidebar:
                             # If a valid user token is active, inject it seamlessly for private/auth tracking
                             authenticated_url = remote_url.replace("https://github.com/", f"https://{github_token}@github.com/")
                         elif "https://github.com/" in remote_url:
-                            # 🌐 ULTIMATE BYPASS FOR PUBLIC REPOSITORIES:
-                            # Inject a static 'x-access-token' string without an empty password divider.
-                            # This cleanly tricks Git into skipping all system credential helpers and terminal prompts,
-                            # forcing it to download the target public repository anonymously as a guest.
-                            authenticated_url = remote_url.replace("https://github.com/", "https://x-access-token@github.com/")
+                            # 🌐 THE DEFINITIVE UN-HIJACKABLE HEADLESS PUBLIC BYPASS:
+                            # Supplying a dummy 'x-access-token' username alongside a placeholder password string
+                            # satisfies Git's parser completely. It skips credential helpers and terminal prompts,
+                            # allowing any public repository to clone instantly as an anonymous guest.
+                            authenticated_url = remote_url.replace("https://github.com/", "https://x-access-token:placeholder@github.com/")
 
                         # Single clean execution pass with safety override enabled
                         Repo.clone_from(
