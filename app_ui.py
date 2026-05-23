@@ -66,6 +66,11 @@ CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
 
 def get_active_workspace_path():
     """Resolves the absolute path for the active thread's repo context or fallback sandbox."""
+    # 🎉 PATH ALIGNMENT FIX: Check if an exact dynamic target path is currently active
+    if "active_target_directory" in st.session_state and st.session_state.active_target_directory:
+        if os.path.exists(st.session_state.active_target_directory):
+            return st.session_state.active_target_directory
+
     active_repo = st.session_state.get("active_repo_name")
     if active_repo:
         path = os.path.join(BASE_WORKSPACE_DIR, active_repo).replace("\\", "/")
@@ -390,6 +395,9 @@ with st.sidebar:
             import time
             unique_suffix = str(int(time.time()))
             target_directory_path = os.path.join(BASE_WORKSPACE_DIR, f"{extracted_name}_{unique_suffix}").replace("\\", "/")
+            
+            # 🎉 BIND ACCURATE TARGET PATH STATE:
+            st.session_state.active_target_directory = target_directory_path
             st.session_state.last_push_success_msg = None
             
             is_already_cloned = False # Force explicit execution pass
@@ -451,6 +459,12 @@ with st.sidebar:
                         shutil.rmtree(temp_extract_path, ignore_errors=True)
 
                     st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly via native zip streaming.")
+                    
+                    # 🖥️ LOCAL AUTOMATION RE-BOOT: (Will execute when running on localhost)
+                    try:
+                        os.system(f'code "{target_directory_path}"')
+                    except Exception: pass
+                    
                     st.session_state.repo_analysis_success = True
                 except Exception as e:
                     st.error(f"Ingestion engine dropped exception: {str(e)}")
