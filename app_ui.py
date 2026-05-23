@@ -425,12 +425,14 @@ with st.sidebar:
                             # for this single operation, allowing it to download public repositories as an unauthenticated guest.
                             git_config_params["credential.helper"] = ""
 
-                        # Single execution block pass
+                        
+                        # Single execution block pass with safety override enabled
                         Repo.clone_from(
                             authenticated_url, 
                             target_directory_path, 
                             env=custom_git_env,
-                            config=git_config_params
+                            config=git_config_params,
+                            allow_unsafe_options=True  # 🎉 OVERRIDE ALLOWED: Bypasses security filter limits cleanly
                         )
 
                         os.system(f'code "{target_directory_path}"')
