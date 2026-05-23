@@ -385,63 +385,66 @@ with st.sidebar:
             
             st.session_state.active_thread_id = new_thread_id
             st.session_state.active_repo_name = extracted_name
-            target_directory_path = os.path.join(BASE_WORKSPACE_DIR, extracted_name).replace("\\", "/")
+            
+            # 🎉 CACHE BUSTER footprint: Generate a completely unique runtime path suffix string
+            import time
+            unique_suffix = str(int(time.time()))
+            target_directory_path = os.path.join(BASE_WORKSPACE_DIR, f"{extracted_name}_{unique_suffix}").replace("\\", "/")
             st.session_state.last_push_success_msg = None
             
-            is_already_cloned = os.path.exists(target_directory_path) and len(os.listdir(target_directory_path)) > 0 if os.path.exists(target_directory_path) else False
+            is_already_cloned = False # Force explicit execution pass
             
-            if is_already_cloned:
-                st.session_state.agent_logs.append("⚡ Repository targeted already exists and is populated. Synchronizing smoothly...")
-                st.session_state.repo_analysis_success = True
-            else:
-                with st.spinner(f"Cloning '{extracted_name}' cleanly into isolated workspace..."):
-                    import subprocess
-                    import shutil
+            with st.spinner(f"Cloning '{extracted_name}' cleanly into isolated workspace..."):
+                import subprocess
+                import shutil
+                
+                try:
+                    if os.path.exists(target_directory_path):
+                        try: shutil.rmtree(target_directory_path, onerror=remove_readonly)
+                        except Exception: pass
+                        
+                    os.makedirs(target_directory_path, exist_ok=True)
                     
-                    try:
-                        if os.path.exists(target_directory_path):
-                            try: shutil.rmtree(target_directory_path, onerror=remove_readonly)
-                            except Exception: pass
-                            
-                        os.makedirs(target_directory_path, exist_ok=True)
+                    # 🌐 CLEAN NATIVE OS-LEVEL REWRITE BOOT MATRIX
+                    # We format the public repo target with a clean inline guest token string
+                    clean_repo_slug = remote_url.split("github.com/")[-1]
+                    if not clean_repo_slug.endswith(".git"):
+                        clean_repo_slug += ".git"
                         
-                        # 🌐 THE ULTIMATE SYSTEM-LEVEL OS BYPASS MATRIX:
-                        # Passing '-c credential.helper=' at the very front of the shell execution parameters
-                        # explicitly commands the Linux OS to completely disable and clear the server's 
-                        # global credential managers. This forces a clean, anonymous public clone instantly.
-                        clone_command = [
-                            "git", 
-                            "-c", "credential.helper=", 
-                            "clone", 
-                            "https://x-access-token:placeholder@github.com/" + remote_url.split("github.com/")[-1], 
-                            target_directory_path
-                        ]
-                        
-                        # Ensure absolute terminal prompt suppression
-                        custom_env = os.environ.copy()
-                        custom_env["GIT_TERMINAL_PROMPT"] = "0"
-                        
-                        result = subprocess.run(
-                            clone_command,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            text=True,
-                            env=custom_env
-                        )
-                        
-                        # If it fails, capture the error log cleanly
-                        if result.returncode != 0:
-                            raise Exception(result.stderr)
+                    target_url = f"https://x-access-token:placeholder@github.com/{clean_repo_slug}"
+                    
+                    # Direct OS execution array to completely isolate environment variable overrides
+                    clone_command = ["git", "-c", "credential.helper=", "clone", target_url, target_directory_path]
+                    
+                    custom_env = os.environ.copy()
+                    custom_env["GIT_TERMINAL_PROMPT"] = "0"
+                    
+                    result = subprocess.run(
+                        clone_command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        env=custom_env
+                    )
+                    
+                    if result.returncode != 0:
+                        raise Exception(result.stderr)
 
-                        st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly.")
-                        st.session_state.repo_analysis_success = True
-                    except Exception as e:
-                        st.error(f"Clone routine dropped exception: {str(e)}")
-                        st.session_state.repo_analysis_success = False
+                    st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly.")
+                    st.session_state.repo_analysis_success = True
+                except Exception as e:
+                    st.error(f"Clone routine dropped exception: {str(e)}")
+                    st.session_state.repo_analysis_success = False
             
             with st.spinner("Re-seeding local vector database..."):
                 from memory_engine import index_project_file
-                new_target_files = list_code_files()
+                # Target the exact dynamic path we just populated
+                new_target_files = []
+                for root, _, files in os.walk(target_directory_path):
+                    for file in files:
+                        if file.endswith(('.py', '.js', '.ts', '.html', '.css', '.md', '.json')):
+                            new_target_files.append(os.path.join(root, file))
+                            
                 for f_path in new_target_files:
                     try:
                         with open(f_path, 'r', encoding='utf-8') as f:
