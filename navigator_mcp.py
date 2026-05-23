@@ -1,7 +1,7 @@
 import os
 
 from memory_engine import index_project_file, search_memory
-from ddgs import DDGS
+from duckduckgo_search import DDGS
 import pyautogui
 from PIL import Image
 import shutil
