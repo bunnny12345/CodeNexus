@@ -404,7 +404,6 @@ with st.sidebar:
                             
                         os.makedirs(target_directory_path, exist_ok=True)
                         
-                        # 🎉 THE ULTIMATE HEADLESS CLOUD OAUTH CLONE MATRIX
                         # 🎉 THE HEADLESS CLOUD UNIFIED CLONE MATRIX
                         authenticated_url = remote_url
                         github_token = st.session_state.get("github_oauth_token") or os.environ.get("GITHUB_TOKEN")
@@ -413,26 +412,25 @@ with st.sidebar:
                         custom_git_env = os.environ.copy()
                         custom_git_env["GIT_TERMINAL_PROMPT"] = "0"
                         
-                        # Initialize a clean config dictionary pass
-                        git_config_params = {}
+                        # Initialize a clean flat list parameter for raw git execution blocks
+                        git_clone_options = []
 
                         if github_token and "https://github.com/" in remote_url:
                             # If a valid token is active, inject it seamlessly into the URL string
                             authenticated_url = remote_url.replace("https://github.com/", f"https://{github_token}@github.com/")
                         else:
-                            # 🌐 PUBLIC CLONE CONFIGURATION OVERRIDE:
-                            # This parameter explicitly forces Git to completely clear its credential helper chain
-                            # for this single operation, allowing it to download public repositories as an unauthenticated guest.
-                            git_config_params["credential.helper"] = ""
+                            # 🌐 ULTIMATE BYPASS FOR PUBLIC REPOSITORIES:
+                            # Pass a flat config flag directly as a primitive list item.
+                            # This completely strips out formatting symbols and executes cleanly as a native string parameter.
+                            git_clone_options.append("--config=credential.helper=")
 
-                        
-                        # Single execution block pass with safety override enabled
+                        # Single clean execution pass with safety override enabled
                         Repo.clone_from(
                             authenticated_url, 
                             target_directory_path, 
                             env=custom_git_env,
-                            config=git_config_params,
-                            allow_unsafe_options=True  # 🎉 OVERRIDE ALLOWED: Bypasses security filter limits cleanly
+                            multi_options=git_clone_options,
+                            allow_unsafe_options=True
                         )
 
                         os.system(f'code "{target_directory_path}"')
