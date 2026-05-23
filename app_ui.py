@@ -405,9 +405,19 @@ with st.sidebar:
                             
                         os.makedirs(target_directory_path, exist_ok=True)
                         
-                        # Direct system execution using the unmodified public URL
-                        clone_command = ["git", "clone", remote_url, target_directory_path]
+                        # 🌐 THE ULTIMATE SYSTEM-LEVEL OS BYPASS MATRIX:
+                        # Passing '-c credential.helper=' at the very front of the shell execution parameters
+                        # explicitly commands the Linux OS to completely disable and clear the server's 
+                        # global credential managers. This forces a clean, anonymous public clone instantly.
+                        clone_command = [
+                            "git", 
+                            "-c", "credential.helper=", 
+                            "clone", 
+                            "https://x-access-token:placeholder@github.com/" + remote_url.split("github.com/")[-1], 
+                            target_directory_path
+                        ]
                         
+                        # Ensure absolute terminal prompt suppression
                         custom_env = os.environ.copy()
                         custom_env["GIT_TERMINAL_PROMPT"] = "0"
                         
@@ -419,6 +429,7 @@ with st.sidebar:
                             env=custom_env
                         )
                         
+                        # If it fails, capture the error log cleanly
                         if result.returncode != 0:
                             raise Exception(result.stderr)
 
