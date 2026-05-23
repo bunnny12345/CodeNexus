@@ -12,7 +12,7 @@ except (ImportError, Exception):
 from PIL import Image
 from google import genai
 from google.genai import types
-from ddgs import DDGS
+
 from memory_engine import index_project_file, search_memory
 from dotenv import load_dotenv
 from navigator_mcp import ingest_remote_github
@@ -114,6 +114,7 @@ def read_multiple_files(file_paths: list[str]):
 def web_search(query: str):
     """Searches the live internet for coding documentation and fixes."""
     try:
+        from duckduckgo_search import DDGS  # 🎉 Placed exactly where it's needed!
         results = []
         with DDGS() as ddgs:
             for r in ddgs.text(query, max_results=5):
