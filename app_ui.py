@@ -402,7 +402,15 @@ with st.sidebar:
                             except Exception: pass
                             
                         os.makedirs(target_directory_path, exist_ok=True)
-                        Repo.clone_from(remote_url, target_directory_path)
+                        # 🎉 AUTHENTICATED CLOUD CLONE PATCH: Inject the OAuth token if running live in production
+                        authenticated_url = remote_url
+                        github_token = st.session_state.get("github_oauth_token") or os.environ.get("GITHUB_TOKEN")
+
+                        if github_token and "https://github.com/" in remote_url:
+                            # Rewrite 'https://github.com/user/repo' to 'https://<token>@github.com/user/repo'
+                            authenticated_url = remote_url.replace("https://github.com/", f"https://{github_token}@github.com/")
+
+                        Repo.clone_from(authenticated_url, target_directory_path)
                         os.system(f'code "{target_directory_path}"')
                         st.session_state.agent_logs.append(f"🔌 VS Code Automation triggered safely.")
                         st.session_state.repo_analysis_success = True
