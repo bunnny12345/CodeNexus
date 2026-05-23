@@ -404,35 +404,33 @@ with st.sidebar:
                             
                         os.makedirs(target_directory_path, exist_ok=True)
                         
-                        # 🎉 THE HEADLESS CLOUD UNIFIED CLONE MATRIX
-                        authenticated_url = remote_url
-                        github_token = st.session_state.get("github_oauth_token") or os.environ.get("GITHUB_TOKEN")
+                        # 🌐 THE ULTIMATE OS-LEVEL SUBPROCESS BYPASS
+                        # Invoking the native Linux system git binary completely evades GitPython configuration caching.
+                        import subprocess
                         
-                        # Build standard Git environment flags to suppress terminal prompts
-                        custom_git_env = os.environ.copy()
-                        custom_git_env["GIT_TERMINAL_PROMPT"] = "0"
-
-                        if github_token and "https://github.com/" in remote_url:
-                            # If a valid user token is active, inject it seamlessly for private/auth tracking
-                            authenticated_url = remote_url.replace("https://github.com/", f"https://{github_token}@github.com/")
-                        elif "https://github.com/" in remote_url:
-                            # 🌐 THE DEFINITIVE UN-HIJACKABLE HEADLESS PUBLIC BYPASS:
-                            # Supplying a dummy 'x-access-token' username alongside a placeholder password string
-                            # satisfies Git's parser completely. It skips credential helpers and terminal prompts,
-                            # allowing any public repository to clone instantly as an anonymous guest.
-                            authenticated_url = remote_url.replace("https://github.com/", "https://x-access-token:placeholder@github.com/")
-
-                        # Single clean execution pass with safety override enabled
-                        Repo.clone_from(
-                            authenticated_url, 
-                            target_directory_path, 
-                            env=custom_git_env,
-                            allow_unsafe_options=True
+                        # Use the clean, unmodified public URL directly!
+                        clone_command = ["git", "clone", remote_url, target_directory_path]
+                        
+                        # Suppress interactive terminal prompt traps at the OS environment layer
+                        custom_env = os.environ.copy()
+                        custom_env["GIT_TERMINAL_PROMPT"] = "0"
+                        
+                        result = subprocess.run(
+                            clone_command,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            env=custom_env
                         )
+                        
+                        # If the OS shell encounters an error, bubble it up directly to st.error
+                        if result.returncode != 0:
+                            raise Exception(result.stderr)
 
                         os.system(f'code "{target_directory_path}"')
                         st.session_state.agent_logs.append(f"🔌 VS Code Automation triggered safely.")
                         st.session_state.repo_analysis_success = True
+                        
                     except Exception as e:
                         st.error(f"Clone routine dropped exception: {str(e)}")
                         st.session_state.repo_analysis_success = False
