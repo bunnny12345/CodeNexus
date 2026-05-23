@@ -54,10 +54,10 @@ def initialize_genai_client():
 client = initialize_genai_client()
 model_id = "gemini-3.1-flash-lite"
 
-# 🎉 UNIFIED CLOUD WORKSPACE ARCHITECTURE:
-# Hardcoding a flat, shared runtime directory guarantees that both 'adminuser' 
-# and 'appuser' scopes point to the exact same physical folder layer.
-BASE_WORKSPACE_DIR = "/home/adminuser/codenexus_workspaces"
+# 🎉 THE GLOBAL UNRESTRICTED RUNTIME WORKSPACE MATRIX
+# Utilizing the system /tmp/ root directory completely bypasses all 
+# Linux user home permission restrictions for both adminuser and appuser.
+BASE_WORKSPACE_DIR = "/tmp/codenexus_workspaces"
 os.makedirs(BASE_WORKSPACE_DIR, exist_ok=True)
 
 # Load OAuth App Credentials
