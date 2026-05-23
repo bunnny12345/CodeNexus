@@ -412,16 +412,22 @@ with st.sidebar:
                     clean_url = remote_url.strip().replace(" ", "")
                     repo_slug = clean_url.split("github.com/")[-1].replace(".git", "").rstrip("/")
                     
-                    zip_download_url = f"https://github.com/{repo_slug}/zipball/"
+                    # 🎯 EXPLICIT BRANCH PATHOVERRIDE: Adding 'main' explicitly prevents 404 routing bugs
+                    zip_download_url = f"https://github.com/{repo_slug}/zipball/main"
                     
                     st.session_state.agent_logs.append(f"📡 Fetching stateless zip stream from GitHub...")
                     
-                    # Pass a legitimate header so GitHub accepts the headless stream request
                     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
                     response = requests.get(zip_download_url, headers=headers, timeout=30, allow_redirects=True)
                     
+                    # 🔄 MASTER BRANCH FALLBACK MATRIX
+                    # If the primary default branch happens to be named 'master' instead of 'main', catch the 404 and hot-swap it
+                    if response.status_code == 404:
+                        zip_download_url = f"https://github.com/{repo_slug}/zipball/master"
+                        response = requests.get(zip_download_url, headers=headers, timeout=30, allow_redirects=True)
+                        
                     if response.status_code != 200:
-                        raise Exception(f"GitHub archive stream rejected request with HTTP status: {response.status_code}. Target URL attempted: https://github.com/{repo_slug}/zipball/")
+                        raise Exception(f"GitHub archive stream rejected request with HTTP status: {response.status_code}. Target URL attempted: https://github.com/{repo_slug}/zipball/main")
                         
                     # Extract zip file natively in-memory
                     with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
