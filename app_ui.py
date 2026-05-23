@@ -411,26 +411,22 @@ with st.sidebar:
                         # Build standard Git environment flags to suppress terminal prompts
                         custom_git_env = os.environ.copy()
                         custom_git_env["GIT_TERMINAL_PROMPT"] = "0"
-                        
-                        # Initialize a clean flat list parameter for raw git execution blocks
-                        git_clone_options = []
 
                         if github_token and "https://github.com/" in remote_url:
-                            # If a valid token is active, inject it seamlessly into the URL string
+                            # If a valid user token is active, inject it seamlessly for private/auth tracking
                             authenticated_url = remote_url.replace("https://github.com/", f"https://{github_token}@github.com/")
-                        else:
-                            # 🌐 THE ULTIMATE ANONYMOUS HEADLESS OVERRIDE:
-                            # Explicitly force an empty Authorization extra header flag.
-                            # This commands the remote network layers to evaluate the pull as a stateless guest,
-                            # completely ignoring and bypassing the local machine's credential storage loops!
-                            git_clone_options.append("--config=http.extraHeader=Authorization:")
+                        elif "https://github.com/" in remote_url:
+                            # 🌐 ULTIMATE BYPASS FOR PUBLIC REPOSITORIES:
+                            # Inject a static 'x-access-token' string without an empty password divider.
+                            # This cleanly tricks Git into skipping all system credential helpers and terminal prompts,
+                            # forcing it to download the target public repository anonymously as a guest.
+                            authenticated_url = remote_url.replace("https://github.com/", "https://x-access-token@github.com/")
 
                         # Single clean execution pass with safety override enabled
                         Repo.clone_from(
                             authenticated_url, 
                             target_directory_path, 
                             env=custom_git_env,
-                            multi_options=git_clone_options,
                             allow_unsafe_options=True
                         )
 
