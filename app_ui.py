@@ -405,13 +405,24 @@ with st.sidebar:
                         
                     os.makedirs(target_directory_path, exist_ok=True)
                     
-                    # 🌐 CLEAN NATIVE OS-LEVEL REWRITE BOOT MATRIX
-                    # We format the public repo target with a clean inline guest token string
-                    clean_repo_slug = remote_url.split("github.com/")[-1]
-                    if not clean_repo_slug.endswith(".git"):
-                        clean_repo_slug += ".git"
+                    # 🌐 THE ULTIMATE STRIP-AND-CLEAN URL EXTRACTOR
+                    # Clean up the input string to remove any trailing slashes, spaces, or hidden characters
+                    clean_url = remote_url.strip().rstrip("/")
+                    
+                    # Safely isolate the user/repo slug by splitting on github.com
+                    if "github.com/" in clean_url:
+                        repo_slug = clean_url.split("github.com/")[-1]
+                    else:
+                        repo_slug = clean_url.split("github.com")[-1]
                         
-                    target_url = f"https://x-access-token:placeholder@github.com/{clean_repo_slug}"
+                    if repo_slug.startswith("/"):
+                        repo_slug = repo_slug[1:]
+                        
+                    if not repo_slug.endswith(".git"):
+                        repo_slug += ".git"
+                        
+                    # Reconstruct the authenticated guest path explicitly
+                    target_url = f"https://x-access-token:placeholder@github.com/{repo_slug}"
                     
                     # Direct OS execution array to completely isolate environment variable overrides
                     clone_command = ["git", "-c", "credential.helper=", "clone", target_url, target_directory_path]
