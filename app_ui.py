@@ -1,7 +1,14 @@
 import streamlit as st
 import os
 import time
-import pyautogui
+
+# 🎉 CLOUD DEPLOYMENT RESILIENCE PASS: Handle headless display initializations gracefully
+try:
+    import pyautogui
+    PYAUTOGUI_AVAILABLE = True
+except (ImportError, Exception):
+    PYAUTOGUI_AVAILABLE = False
+
 from PIL import Image
 from google import genai
 from google.genai import types
@@ -144,13 +151,11 @@ def apply_code_fix(file_path: str, new_content: str):
 
 def capture_screen(label: str = "screenshot"):
     """Takes a high-resolution screenshot of the user's current screen."""
-    try:
-        screenshot = pyautogui.screenshot()
-        file_path = "last_vision_capture.png"
-        screenshot.save(file_path)
-        return f"SUCCESS: Screenshot captured and saved as {file_path}. Label: {label}"
-    except Exception as e:
-        return f"ERROR: {str(e)}"
+    global PYAUTOGUI_AVAILABLE  # 👈 Add this line to clear the yellow warning!
+    
+    # Ensure headless cloud deployments return a clean status message instead of dropping a hard crash
+    if not PYAUTOGUI_AVAILABLE:
+        return "ERROR: Screen capture utility is only available when running CodeNexus locally..."
 
 # ==========================================
 # 2. SETUP PAGE & MULTI-THREAD HISTORY STATE
