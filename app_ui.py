@@ -400,50 +400,62 @@ with st.sidebar:
                 
                 try:
                         if os.path.exists(target_directory_path):
-                            try: shutil.rmtree(target_directory_path, onerror=remove_readonly)
+                            try: shutil.rmtree(target_directory_path)
                             except Exception: pass
                             
                         os.makedirs(target_directory_path, exist_ok=True)
                         
-                        import subprocess
+                        # 🌐 NATIVE PYTHON CODEBASE INGESTION ENGINE
+                        # Bypasses the local system Git installation entirely to avoid cloud proxy authentication blocks
+                        import requests
+                        import zipfile
+                        import io
                         
-                        # Use the clean, standard public URL format directly
-                        clean_url = remote_url.strip()
-                        if not clean_url.endswith(".git"):
-                            clean_url += ".git"
+                        # Sanitize and parse user/repo slug parameters safely
+                        clean_url = remote_url.strip().rstrip("/")
+                        repo_slug = clean_url.split("github.com/")[-1].replace(".git", "")
                         
-                        clone_command = ["git", "clone", clean_url, target_directory_path]
+                        # Build the public, stateless GitHub Zip distribution API target URL
+                        zip_download_url = f"https://github.com/{repo_slug}/archive/refs/heads/main.zip"
                         
-                        # 🌐 THE ULTIMATE GLOBAL ENVIRONMENT INJECTION BYPASS
-                        # This forces the operating system's Git binary to automatically intercept 
-                        # and rewrite all GitHub connections globally, bypassing any file tracking loops!
-                        custom_env = os.environ.copy()
-                        custom_env["GIT_TERMINAL_PROMPT"] = "0"
+                        st.session_state.agent_logs.append(f"📡 Fetching stateless zip stream from GitHub...")
                         
-                        # Explicitly clear the server's global credential configuration helpers
-                        custom_env["GIT_CONFIG_COUNT"] = "2"
-                        custom_env["GIT_CONFIG_KEY_0"] = "credential.helper"
-                        custom_env["GIT_CONFIG_VALUE_0"] = ""
+                        response = requests.get(zip_download_url, timeout=30)
                         
-                        # Automatically rewrite all raw incoming GitHub requests with guest token layouts
-                        custom_env["GIT_CONFIG_KEY_1"] = "url.https://x-access-token:placeholder@github.com/.insteadOf"
-                        custom_env["GIT_CONFIG_VALUE_1"] = "https://github.com/"
-                        
-                        result = subprocess.run(
-                            clone_command,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            text=True,
-                            env=custom_env
-                        )
-                        
-                        if result.returncode != 0:
-                            raise Exception(result.stderr)
+                        # Fallback try-catch check for master branches instead of modern main branches
+                        if response.status_code != 200:
+                            zip_download_url = f"https://github.com/{repo_slug}/archive/refs/heads/master.zip"
+                            response = requests.get(zip_download_url, timeout=30)
+                            
+                        if response.status_code != 200:
+                            raise Exception(f"GitHub archive stream rejected request with HTTP status: {response.status_code}")
+                            
+                        # Extract the zip file contents directly into memory and unpack it natively
+                        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
+                            # GitHub zips nest everything inside a root directory folder named 'repo-branch'
+                            top_dir = zip_ref.namelist()[0].split("/")[0]
+                            
+                            # Extract everything cleanly to a temporary location
+                            temp_extract_path = os.path.join(BASE_WORKSPACE_DIR, f"temp_{unique_suffix}")
+                            zip_ref.extractall(temp_extract_path)
+                            
+                            # Move the inner extracted contents into your active target workspace directory layout
+                            src_dir = os.path.join(temp_extract_path, top_dir)
+                            for item in os.listdir(src_dir):
+                                s = os.path.join(src_dir, item)
+                                d = os.path.join(target_directory_path, item)
+                                if os.path.isdir(s):
+                                    shutil.copytree(s, d, dirs_exist_ok=True)
+                                else:
+                                    shutil.copy2(s, d)
+                                    
+                            # Clean up the temporary archive folder files cleanly
+                            shutil.rmtree(temp_extract_path, ignore_errors=True)
 
-                        st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly.")
+                        st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly via native zip streaming.")
                         st.session_state.repo_analysis_success = True
                 except Exception as e:
-                    st.error(f"Clone routine dropped exception: {str(e)}")
+                    st.error(f"Ingestion engine dropped exception: {str(e)}")
                     st.session_state.repo_analysis_success = False
             
             with st.spinner("Re-seeding local vector database..."):
