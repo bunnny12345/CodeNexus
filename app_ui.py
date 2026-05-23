@@ -415,7 +415,8 @@ with st.sidebar:
                         elif "https://github.com/" in remote_url:
                             # 🌐 PUBLIC ANONYMOUS FALLBACK: Convert HTTPS to the stateless git:// protocol 
                             # This completely bypasses credential/terminal checks for public codebases!
-                            authenticated_url = remote_url.replace("https://github.com/", "https://anonymous:anonymous@github.com/")
+                            # 🌐 FORCE HEADLESS GUEST STREAM: Use empty credential placeholders to pull public repositories
+                            authenticated_url = remote_url.replace("https://github.com/", "https://x-access-token:@github.com/")
                         # Force Git terminal configurations to disable interactive credential loops
                         custom_git_env = os.environ.copy()
                         custom_git_env["GIT_TERMINAL_PROMPT"] = "0"
