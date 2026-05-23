@@ -54,9 +54,10 @@ def initialize_genai_client():
 client = initialize_genai_client()
 model_id = "gemini-3.1-flash-lite"
 
-# Root Environment Directory Configurations
-HOME_DIR = os.path.expanduser("~")
-BASE_WORKSPACE_DIR = os.path.join(HOME_DIR, "codenexus_workspaces").replace("\\", "/")
+# 🎉 UNIFIED CLOUD WORKSPACE ARCHITECTURE:
+# Hardcoding a flat, shared runtime directory guarantees that both 'adminuser' 
+# and 'appuser' scopes point to the exact same physical folder layer.
+BASE_WORKSPACE_DIR = "/home/adminuser/codenexus_workspaces"
 os.makedirs(BASE_WORKSPACE_DIR, exist_ok=True)
 
 # Load OAuth App Credentials
@@ -394,7 +395,7 @@ with st.sidebar:
                 st.session_state.repo_analysis_success = True
             else:
                 with st.spinner(f"Cloning '{extracted_name}' cleanly into isolated workspace..."):
-                    from git import Repo
+                    import subprocess
                     import shutil
                     
                     try:
@@ -404,14 +405,9 @@ with st.sidebar:
                             
                         os.makedirs(target_directory_path, exist_ok=True)
                         
-                        # 🌐 THE ULTIMATE OS-LEVEL SUBPROCESS BYPASS
-                        # Invoking the native Linux system git binary completely evades GitPython configuration caching.
-                        import subprocess
-                        
-                        # Use the clean, unmodified public URL directly!
+                        # Direct system execution using the unmodified public URL
                         clone_command = ["git", "clone", remote_url, target_directory_path]
                         
-                        # Suppress interactive terminal prompt traps at the OS environment layer
                         custom_env = os.environ.copy()
                         custom_env["GIT_TERMINAL_PROMPT"] = "0"
                         
@@ -423,14 +419,11 @@ with st.sidebar:
                             env=custom_env
                         )
                         
-                        # If the OS shell encounters an error, bubble it up directly to st.error
                         if result.returncode != 0:
                             raise Exception(result.stderr)
 
-                        os.system(f'code "{target_directory_path}"')
-                        st.session_state.agent_logs.append(f"🔌 VS Code Automation triggered safely.")
+                        st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly.")
                         st.session_state.repo_analysis_success = True
-                        
                     except Exception as e:
                         st.error(f"Clone routine dropped exception: {str(e)}")
                         st.session_state.repo_analysis_success = False
