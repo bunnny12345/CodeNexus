@@ -405,27 +405,32 @@ with st.sidebar:
                         os.makedirs(target_directory_path, exist_ok=True)
                         
                         # 🎉 THE ULTIMATE HEADLESS CLOUD OAUTH CLONE MATRIX
-                        # 🎉 THE ULTIMATE HEADLESS CLOUD OAUTH CLONE MATRIX
+                        # 🎉 THE HEADLESS CLOUD UNIFIED CLONE MATRIX
                         authenticated_url = remote_url
                         github_token = st.session_state.get("github_oauth_token") or os.environ.get("GITHUB_TOKEN")
-
-                        if github_token and "https://github.com/" in remote_url:
-                            # Inject token explicitly for private or authenticated repo access paths
-                            authenticated_url = remote_url.replace("https://github.com/", f"https://{github_token}@github.com/")
-                        elif "https://github.com/" in remote_url:
-                            # 🌐 PUBLIC ANONYMOUS FALLBACK: Convert HTTPS to the stateless git:// protocol 
-                            # This completely bypasses credential/terminal checks for public codebases!
-                            # 🌐 FORCE HEADLESS GUEST STREAM: Use empty credential placeholders to pull public repositories
-                            authenticated_url = remote_url.replace("https://github.com/", "https://x-access-token:@github.com/")
-                        # Force Git terminal configurations to disable interactive credential loops
+                        
+                        # Build standard Git environment flags to suppress terminal prompts
                         custom_git_env = os.environ.copy()
                         custom_git_env["GIT_TERMINAL_PROMPT"] = "0"
                         
-                        # Clean single execution pass
+                        # Initialize a clean config dictionary pass
+                        git_config_params = {}
+
+                        if github_token and "https://github.com/" in remote_url:
+                            # If a valid token is active, inject it seamlessly into the URL string
+                            authenticated_url = remote_url.replace("https://github.com/", f"https://{github_token}@github.com/")
+                        else:
+                            # 🌐 PUBLIC CLONE CONFIGURATION OVERRIDE:
+                            # This parameter explicitly forces Git to completely clear its credential helper chain
+                            # for this single operation, allowing it to download public repositories as an unauthenticated guest.
+                            git_config_params["credential.helper"] = ""
+
+                        # Single execution block pass
                         Repo.clone_from(
                             authenticated_url, 
                             target_directory_path, 
-                            env=custom_git_env
+                            env=custom_git_env,
+                            config=git_config_params
                         )
 
                         os.system(f'code "{target_directory_path}"')
