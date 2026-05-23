@@ -460,10 +460,15 @@ with st.sidebar:
 
                     st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly via native zip streaming.")
                     
-                    # 🖥️ LOCAL AUTOMATION RE-BOOT: (Will execute when running on localhost)
-                    try:
-                        os.system(f'code "{target_directory_path}"')
-                    except Exception: pass
+                    # 🖥️ LOCAL-ONLY INTERFACE HOT-KEY: 
+                    # Only execute the desktop application hook if the runtime environment is running locally
+                    if "STREAMLIT_SERVER_ADDRESS" not in os.environ and "localhost" in st.get_option("browser.serverAddress"):
+                        try:
+                            import subprocess
+                            subprocess.Popen(["code", target_directory_path], shell=True)
+                            st.session_state.agent_logs.append("🖥️ Local VS Code workstation launched.")
+                        except Exception:
+                            pass
                     
                     st.session_state.repo_analysis_success = True
                 except Exception as e:
@@ -503,7 +508,9 @@ with st.sidebar:
         if "github_oauth_token" not in st.session_state:
             login_url = f"https://github.com/login/oauth/authorize?client_id={CLIENT_ID}&scope=repo"
             st.warning("Authentication Required to Deploy Changes.")
-            st.markdown(f'<a href="{login_url}" target="_self"><button style="width:100%; height:40px; background-color:#24292e; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">🔗 Connect GitHub Account</button></a>', unsafe_allow_html=True)
+            # 🎉 BREAK OUT OF THE IFRAME: Changing target to "_top" forces the browser 
+            # to open the GitHub login screen in a clean window baseline, solving the connection refusal.
+            st.markdown(f'<a href="{login_url}" target="_top"><button style="width:100%; height:40px; background-color:#24292e; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">🔗 Connect GitHub Account</button></a>', unsafe_allow_html=True)
         else:
             st.success("🔒 Authenticated via GitHub OAuth")
             if "messages" in st.session_state and st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
