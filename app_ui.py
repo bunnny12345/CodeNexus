@@ -419,10 +419,11 @@ with st.sidebar:
                             # If a valid token is active, inject it seamlessly into the URL string
                             authenticated_url = remote_url.replace("https://github.com/", f"https://{github_token}@github.com/")
                         else:
-                            # 🌐 ULTIMATE BYPASS FOR PUBLIC REPOSITORIES:
-                            # Pass a flat config flag directly as a primitive list item.
-                            # This completely strips out formatting symbols and executes cleanly as a native string parameter.
-                            git_clone_options.append("--config=credential.helper=")
+                            # 🌐 THE ULTIMATE ANONYMOUS HEADLESS OVERRIDE:
+                            # Explicitly force an empty Authorization extra header flag.
+                            # This commands the remote network layers to evaluate the pull as a stateless guest,
+                            # completely ignoring and bypassing the local machine's credential storage loops!
+                            git_clone_options.append("--config=http.extraHeader=Authorization:")
 
                         # Single clean execution pass with safety override enabled
                         Repo.clone_from(
