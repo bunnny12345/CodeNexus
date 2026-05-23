@@ -396,21 +396,33 @@ with st.sidebar:
                 with st.spinner(f"Cloning '{extracted_name}' cleanly into isolated workspace..."):
                     from git import Repo
                     import shutil
+                    
                     try:
                         if os.path.exists(target_directory_path):
                             try: shutil.rmtree(target_directory_path, onerror=remove_readonly)
                             except Exception: pass
                             
                         os.makedirs(target_directory_path, exist_ok=True)
-                        # 🎉 AUTHENTICATED CLOUD CLONE PATCH: Inject the OAuth token if running live in production
+                        
+                        # 🎉 THE ULTIMATE HEADLESS CLOUD OAUTH CLONE MATRIX
                         authenticated_url = remote_url
                         github_token = st.session_state.get("github_oauth_token") or os.environ.get("GITHUB_TOKEN")
 
                         if github_token and "https://github.com/" in remote_url:
-                            # Rewrite 'https://github.com/user/repo' to 'https://<token>@github.com/user/repo'
+                            # Inject token explicitly for private or authenticated repo access paths
                             authenticated_url = remote_url.replace("https://github.com/", f"https://{github_token}@github.com/")
+                        
+                        # Force Git terminal configurations to disable interactive credential loops
+                        custom_git_env = os.environ.copy()
+                        custom_git_env["GIT_TERMINAL_PROMPT"] = "0"
+                        
+                        # Clean single execution pass
+                        Repo.clone_from(
+                            authenticated_url, 
+                            target_directory_path, 
+                            env=custom_git_env
+                        )
 
-                        Repo.clone_from(authenticated_url, target_directory_path)
                         os.system(f'code "{target_directory_path}"')
                         st.session_state.agent_logs.append(f"🔌 VS Code Automation triggered safely.")
                         st.session_state.repo_analysis_success = True
