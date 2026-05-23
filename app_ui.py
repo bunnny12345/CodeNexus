@@ -374,7 +374,7 @@ with st.sidebar:
     
     if st.button("🚀 Analyze External Repository", use_container_width=True):
         if remote_url:
-            extracted_name = remote_url.split("/")[-1].replace(".git", "")
+            extracted_name = remote_url.split("/")[-1].replace(".git", "").strip()
             old_thread_id = st.session_state.active_thread_id
             new_thread_id = f"📦 {extracted_name}"
             
@@ -386,7 +386,7 @@ with st.sidebar:
             st.session_state.active_thread_id = new_thread_id
             st.session_state.active_repo_name = extracted_name
             
-            # 🎉 CACHE BUSTER footprint: Generate a completely unique runtime path suffix string
+            # 🎉 CACHE BUSTER FOOTPRINT: Forces a fresh container footprint every execution
             import time
             unique_suffix = str(int(time.time()))
             target_directory_path = os.path.join(BASE_WORKSPACE_DIR, f"{extracted_name}_{unique_suffix}").replace("\\", "/")
@@ -395,72 +395,63 @@ with st.sidebar:
             is_already_cloned = False # Force explicit execution pass
             
             with st.spinner(f"Cloning '{extracted_name}' cleanly into isolated workspace..."):
-                
+                import requests
+                import zipfile
+                import io
                 import shutil
                 
                 try:
-                        if os.path.exists(target_directory_path):
-                            try: shutil.rmtree(target_directory_path)
-                            except Exception: pass
-                            
-                        os.makedirs(target_directory_path, exist_ok=True)
+                    if os.path.exists(target_directory_path):
+                        try: shutil.rmtree(target_directory_path)
+                        except Exception: pass
                         
-                        # 🌐 NATIVE PYTHON CODEBASE INGESTION ENGINE
-                        # Bypasses the local system Git installation entirely to avoid cloud proxy authentication blocks
-                        import requests
-                        import zipfile
-                        import io
+                    os.makedirs(target_directory_path, exist_ok=True)
+                    
+                    # 🌐 THE UNIVERALLY REDIRECTING ZIPBALL ENDPOINT
+                    # Strips spaces and slashes, then targets GitHub's stateless zip redirector
+                    clean_url = remote_url.strip().replace(" ", "")
+                    repo_slug = clean_url.split("github.com/")[-1].replace(".git", "").rstrip("/")
+                    
+                    zip_download_url = f"https://github.com/{repo_slug}/zipball/"
+                    
+                    st.session_state.agent_logs.append(f"📡 Fetching stateless zip stream from GitHub...")
+                    
+                    # Pass a legitimate header so GitHub accepts the headless stream request
+                    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+                    response = requests.get(zip_download_url, headers=headers, timeout=30, allow_redirects=True)
+                    
+                    if response.status_code != 200:
+                        raise Exception(f"GitHub archive stream rejected request with HTTP status: {response.status_code}. Target URL attempted: https://github.com/{repo_slug}/zipball/")
                         
-                        # Sanitize and parse user/repo slug parameters safely
-                        clean_url = remote_url.strip().rstrip("/")
-                        repo_slug = clean_url.split("github.com/")[-1].replace(".git", "")
+                    # Extract zip file natively in-memory
+                    with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
+                        # GitHub zips nest everything inside a dynamic root folder named 'user-repo-hash'
+                        top_dir = zip_ref.namelist()[0].split("/")[0]
                         
-                        # Build the public, stateless GitHub Zip distribution API target URL
-                        zip_download_url = f"https://github.com/{repo_slug}/archive/refs/heads/main.zip"
+                        temp_extract_path = os.path.join(BASE_WORKSPACE_DIR, f"temp_{unique_suffix}")
+                        zip_ref.extractall(temp_extract_path)
                         
-                        st.session_state.agent_logs.append(f"📡 Fetching stateless zip stream from GitHub...")
-                        
-                        response = requests.get(zip_download_url, timeout=30)
-                        
-                        # Fallback try-catch check for master branches instead of modern main branches
-                        if response.status_code != 200:
-                            zip_download_url = f"https://github.com/{repo_slug}/archive/refs/heads/master.zip"
-                            response = requests.get(zip_download_url, timeout=30)
-                            
-                        if response.status_code != 200:
-                            raise Exception(f"GitHub archive stream rejected request with HTTP status: {response.status_code}")
-                            
-                        # Extract the zip file contents directly into memory and unpack it natively
-                        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
-                            # GitHub zips nest everything inside a root directory folder named 'repo-branch'
-                            top_dir = zip_ref.namelist()[0].split("/")[0]
-                            
-                            # Extract everything cleanly to a temporary location
-                            temp_extract_path = os.path.join(BASE_WORKSPACE_DIR, f"temp_{unique_suffix}")
-                            zip_ref.extractall(temp_extract_path)
-                            
-                            # Move the inner extracted contents into your active target workspace directory layout
-                            src_dir = os.path.join(temp_extract_path, top_dir)
-                            for item in os.listdir(src_dir):
-                                s = os.path.join(src_dir, item)
-                                d = os.path.join(target_directory_path, item)
-                                if os.path.isdir(s):
-                                    shutil.copytree(s, d, dirs_exist_ok=True)
-                                else:
-                                    shutil.copy2(s, d)
-                                    
-                            # Clean up the temporary archive folder files cleanly
-                            shutil.rmtree(temp_extract_path, ignore_errors=True)
+                        # Flatten the nested root directory layout straight into your target path
+                        src_dir = os.path.join(temp_extract_path, top_dir)
+                        for item in os.listdir(src_dir):
+                            s = os.path.join(src_dir, item)
+                            d = os.path.join(target_directory_path, item)
+                            if os.path.isdir(s):
+                                shutil.copytree(s, d, dirs_exist_ok=True)
+                            else:
+                                shutil.copy2(s, d)
+                                
+                        # Clean up the intermediate temp folder
+                        shutil.rmtree(temp_extract_path, ignore_errors=True)
 
-                        st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly via native zip streaming.")
-                        st.session_state.repo_analysis_success = True
+                    st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly via native zip streaming.")
+                    st.session_state.repo_analysis_success = True
                 except Exception as e:
                     st.error(f"Ingestion engine dropped exception: {str(e)}")
                     st.session_state.repo_analysis_success = False
             
             with st.spinner("Re-seeding local vector database..."):
                 from memory_engine import index_project_file
-                # Target the exact dynamic path we just populated
                 new_target_files = []
                 for root, _, files in os.walk(target_directory_path):
                     for file in files:
