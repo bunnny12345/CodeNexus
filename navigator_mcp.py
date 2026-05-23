@@ -2,7 +2,13 @@ import os
 
 from memory_engine import index_project_file, search_memory
 from duckduckgo_search import DDGS
-import pyautogui
+# 🎉 CLOUD DEPLOYMENT RESILIENCE PASS: Handle headless screen captures gracefully
+try:
+    import pyautogui
+    PYAUTOGUI_AVAILABLE = True
+except (ImportError, Exception):
+    PYAUTOGUI_AVAILABLE = False
+
 from PIL import Image
 import shutil
 from git import Repo
@@ -165,18 +171,16 @@ def web_search(query: str):
 
 
 def capture_screen(label: str = "screenshot"):
-    """Takes a high-resolution screenshot of the user's current screen.
-    Use this to see terminal errors, UI bugs, or code formatting in VS Code.
-    The image is saved locally as 'last_vision_capture.png'.
-    """
-    try:
-        # Capture the entire primary monitor
-        screenshot = pyautogui.screenshot()
+    """Takes a high-resolution screenshot of the user's current screen."""
+    global PYAUTOGUI_AVAILABLE
+    
+    if not PYAUTOGUI_AVAILABLE:
+        return "ERROR: Screen capture utility is only available when running CodeNexus locally in a desktop sandbox environment with a physical display monitor."
         
-        # Save it to the project root
+    try:
+        screenshot = pyautogui.screenshot()
         file_path = "last_vision_capture.png"
         screenshot.save(file_path)
-        
         return f"SUCCESS: Screenshot captured and saved as {file_path}. Label: {label}"
     except Exception as e:
         return f"ERROR: Failed to capture screen: {str(e)}"
