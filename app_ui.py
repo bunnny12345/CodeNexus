@@ -395,54 +395,53 @@ with st.sidebar:
             is_already_cloned = False # Force explicit execution pass
             
             with st.spinner(f"Cloning '{extracted_name}' cleanly into isolated workspace..."):
-                import subprocess
+                
                 import shutil
                 
                 try:
-                    if os.path.exists(target_directory_path):
-                        try: shutil.rmtree(target_directory_path, onerror=remove_readonly)
-                        except Exception: pass
+                        if os.path.exists(target_directory_path):
+                            try: shutil.rmtree(target_directory_path, onerror=remove_readonly)
+                            except Exception: pass
+                            
+                        os.makedirs(target_directory_path, exist_ok=True)
                         
-                    os.makedirs(target_directory_path, exist_ok=True)
-                    
-                    # 🌐 THE ULTIMATE STRIP-AND-CLEAN URL EXTRACTOR
-                    # Clean up the input string to remove any trailing slashes, spaces, or hidden characters
-                    clean_url = remote_url.strip().rstrip("/")
-                    
-                    # Safely isolate the user/repo slug by splitting on github.com
-                    if "github.com/" in clean_url:
-                        repo_slug = clean_url.split("github.com/")[-1]
-                    else:
-                        repo_slug = clean_url.split("github.com")[-1]
+                        import subprocess
                         
-                    if repo_slug.startswith("/"):
-                        repo_slug = repo_slug[1:]
+                        # Use the clean, standard public URL format directly
+                        clean_url = remote_url.strip()
+                        if not clean_url.endswith(".git"):
+                            clean_url += ".git"
                         
-                    if not repo_slug.endswith(".git"):
-                        repo_slug += ".git"
+                        clone_command = ["git", "clone", clean_url, target_directory_path]
                         
-                    # Reconstruct the authenticated guest path explicitly
-                    target_url = f"https://x-access-token:placeholder@github.com/{repo_slug}"
-                    
-                    # Direct OS execution array to completely isolate environment variable overrides
-                    clone_command = ["git", "-c", "credential.helper=", "clone", target_url, target_directory_path]
-                    
-                    custom_env = os.environ.copy()
-                    custom_env["GIT_TERMINAL_PROMPT"] = "0"
-                    
-                    result = subprocess.run(
-                        clone_command,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        text=True,
-                        env=custom_env
-                    )
-                    
-                    if result.returncode != 0:
-                        raise Exception(result.stderr)
+                        # 🌐 THE ULTIMATE GLOBAL ENVIRONMENT INJECTION BYPASS
+                        # This forces the operating system's Git binary to automatically intercept 
+                        # and rewrite all GitHub connections globally, bypassing any file tracking loops!
+                        custom_env = os.environ.copy()
+                        custom_env["GIT_TERMINAL_PROMPT"] = "0"
+                        
+                        # Explicitly clear the server's global credential configuration helpers
+                        custom_env["GIT_CONFIG_COUNT"] = "2"
+                        custom_env["GIT_CONFIG_KEY_0"] = "credential.helper"
+                        custom_env["GIT_CONFIG_VALUE_0"] = ""
+                        
+                        # Automatically rewrite all raw incoming GitHub requests with guest token layouts
+                        custom_env["GIT_CONFIG_KEY_1"] = "url.https://x-access-token:placeholder@github.com/.insteadOf"
+                        custom_env["GIT_CONFIG_VALUE_1"] = "https://github.com/"
+                        
+                        result = subprocess.run(
+                            clone_command,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            env=custom_env
+                        )
+                        
+                        if result.returncode != 0:
+                            raise Exception(result.stderr)
 
-                    st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly.")
-                    st.session_state.repo_analysis_success = True
+                        st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly.")
+                        st.session_state.repo_analysis_success = True
                 except Exception as e:
                     st.error(f"Clone routine dropped exception: {str(e)}")
                     st.session_state.repo_analysis_success = False
