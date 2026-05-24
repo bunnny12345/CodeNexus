@@ -55,7 +55,7 @@ Follow these steps to run the project locally.
 ### 1. Clone the Repository
 
 ```bash
-git clone [https://github.com/bunnny12345/CodeNexus.git](https://github.com/bunnny12345/CodeNexus.git)
+ggit clone https://github.com/bunnny12345/CodeNexus.git
 ```
 
 ### 2. Navigate to the Project Directory
@@ -88,7 +88,9 @@ pip install -r requirements.txt
 Create a .env file inside the root directory and append your secure API credentials:
 
 GEMINI_API_KEY=your_google_gemini_api_key_here
+
 GITHUB_CLIENT_ID=your_oauth_app_client_id_here
+
 GITHUB_CLIENT_SECRET=your_oauth_app_client_secret_here
 
 ---
