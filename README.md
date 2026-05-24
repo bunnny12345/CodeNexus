@@ -38,12 +38,18 @@ graph TD
     
     UI --> Architect[Lead Architect Agent]
     Architect --> Tools{Available Toolset}
+    
+    
     Tools --> |ask_memory| DB
+    DB -.-> |Return Context Chunks| Architect
+    
     Tools --> |capture_screen| Vision[PyAutoGUI Sight Engine]
     Tools --> |apply_code_fix| Handshake{Dual-Agent Handshake}
     
-    Handshake --> |Fetch Security Rules| DB
+    
     Handshake --> Reviewer[Senior Reviewer Agent]
+    DB --> |Fetch Security Rules| Reviewer
+    
     Reviewer --> |Validate Change| Verdict{LGTM / Reject}
     Verdict --> |Approved| Disk[Write Changes to Disk]
     Verdict --> |Rejected| UI
