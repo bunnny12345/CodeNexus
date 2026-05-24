@@ -1,18 +1,11 @@
 import streamlit as st
 import os
 import time
-
-# 🎉 CLOUD DEPLOYMENT RESILIENCE PASS: Handle headless display initializations gracefully
-try:
-    import pyautogui
-    PYAUTOGUI_AVAILABLE = True
-except (ImportError, Exception):
-    PYAUTOGUI_AVAILABLE = False
-
+import pyautogui
 from PIL import Image
 from google import genai
 from google.genai import types
-
+from ddgs import DDGS
 from memory_engine import index_project_file, search_memory
 from dotenv import load_dotenv
 from navigator_mcp import ingest_remote_github
@@ -54,10 +47,9 @@ def initialize_genai_client():
 client = initialize_genai_client()
 model_id = "gemini-3.1-flash-lite"
 
-# 🎉 THE GLOBAL UNRESTRICTED RUNTIME WORKSPACE MATRIX
-# Utilizing the system /tmp/ root directory completely bypasses all 
-# Linux user home permission restrictions for both adminuser and appuser.
-BASE_WORKSPACE_DIR = "/tmp/codenexus_workspaces"
+# Root Environment Directory Configurations
+HOME_DIR = os.path.expanduser("~")
+BASE_WORKSPACE_DIR = os.path.join(HOME_DIR, "codenexus_workspaces").replace("\\", "/")
 os.makedirs(BASE_WORKSPACE_DIR, exist_ok=True)
 
 # Load OAuth App Credentials
@@ -66,11 +58,6 @@ CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
 
 def get_active_workspace_path():
     """Resolves the absolute path for the active thread's repo context or fallback sandbox."""
-    # 🎉 PATH ALIGNMENT FIX: Check if an exact dynamic target path is currently active
-    if "active_target_directory" in st.session_state and st.session_state.active_target_directory:
-        if os.path.exists(st.session_state.active_target_directory):
-            return st.session_state.active_target_directory
-
     active_repo = st.session_state.get("active_repo_name")
     if active_repo:
         path = os.path.join(BASE_WORKSPACE_DIR, active_repo).replace("\\", "/")
@@ -120,7 +107,6 @@ def read_multiple_files(file_paths: list[str]):
 def web_search(query: str):
     """Searches the live internet for coding documentation and fixes."""
     try:
-        from duckduckgo_search import DDGS  # 🎉 Placed exactly where it's needed!
         results = []
         with DDGS() as ddgs:
             for r in ddgs.text(query, max_results=5):
@@ -158,11 +144,13 @@ def apply_code_fix(file_path: str, new_content: str):
 
 def capture_screen(label: str = "screenshot"):
     """Takes a high-resolution screenshot of the user's current screen."""
-    global PYAUTOGUI_AVAILABLE  # 👈 Add this line to clear the yellow warning!
-    
-    # Ensure headless cloud deployments return a clean status message instead of dropping a hard crash
-    if not PYAUTOGUI_AVAILABLE:
-        return "ERROR: Screen capture utility is only available when running CodeNexus locally..."
+    try:
+        screenshot = pyautogui.screenshot()
+        file_path = "last_vision_capture.png"
+        screenshot.save(file_path)
+        return f"SUCCESS: Screenshot captured and saved as {file_path}. Label: {label}"
+    except Exception as e:
+        return f"ERROR: {str(e)}"
 
 # ==========================================
 # 2. SETUP PAGE & MULTI-THREAD HISTORY STATE
@@ -379,7 +367,7 @@ with st.sidebar:
     
     if st.button("🚀 Analyze External Repository", use_container_width=True):
         if remote_url:
-            extracted_name = remote_url.split("/")[-1].replace(".git", "").strip()
+            extracted_name = remote_url.split("/")[-1].replace(".git", "")
             old_thread_id = st.session_state.active_thread_id
             new_thread_id = f"📦 {extracted_name}"
             
@@ -390,99 +378,35 @@ with st.sidebar:
             
             st.session_state.active_thread_id = new_thread_id
             st.session_state.active_repo_name = extracted_name
-            
-            # 🎉 CACHE BUSTER FOOTPRINT: Forces a fresh container footprint every execution
-            import time
-            unique_suffix = str(int(time.time()))
-            target_directory_path = os.path.join(BASE_WORKSPACE_DIR, f"{extracted_name}_{unique_suffix}").replace("\\", "/")
-            
-            # 🎉 BIND ACCURATE TARGET PATH STATE:
-            st.session_state.active_target_directory = target_directory_path
+            target_directory_path = os.path.join(BASE_WORKSPACE_DIR, extracted_name).replace("\\", "/")
             st.session_state.last_push_success_msg = None
             
-            is_already_cloned = False # Force explicit execution pass
+            is_already_cloned = os.path.exists(target_directory_path) and len(os.listdir(target_directory_path)) > 0 if os.path.exists(target_directory_path) else False
             
-            with st.spinner(f"Cloning '{extracted_name}' cleanly into isolated workspace..."):
-                import requests
-                import zipfile
-                import io
-                import shutil
-                
-                try:
-                    if os.path.exists(target_directory_path):
-                        try: shutil.rmtree(target_directory_path)
-                        except Exception: pass
-                        
-                    os.makedirs(target_directory_path, exist_ok=True)
-                    
-                    # 🌐 THE UNIVERALLY REDIRECTING ZIPBALL ENDPOINT
-                    # Strips spaces and slashes, then targets GitHub's stateless zip redirector
-                    clean_url = remote_url.strip().replace(" ", "")
-                    repo_slug = clean_url.split("github.com/")[-1].replace(".git", "").rstrip("/")
-                    
-                    # 🎯 EXPLICIT BRANCH PATHOVERRIDE: Adding 'main' explicitly prevents 404 routing bugs
-                    zip_download_url = f"https://github.com/{repo_slug}/zipball/main"
-                    
-                    st.session_state.agent_logs.append(f"📡 Fetching stateless zip stream from GitHub...")
-                    
-                    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-                    response = requests.get(zip_download_url, headers=headers, timeout=30, allow_redirects=True)
-                    
-                    # 🔄 MASTER BRANCH FALLBACK MATRIX
-                    # If the primary default branch happens to be named 'master' instead of 'main', catch the 404 and hot-swap it
-                    if response.status_code == 404:
-                        zip_download_url = f"https://github.com/{repo_slug}/zipball/master"
-                        response = requests.get(zip_download_url, headers=headers, timeout=30, allow_redirects=True)
-                        
-                    if response.status_code != 200:
-                        raise Exception(f"GitHub archive stream rejected request with HTTP status: {response.status_code}. Target URL attempted: https://github.com/{repo_slug}/zipball/main")
-                        
-                    # Extract zip file natively in-memory
-                    with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
-                        # GitHub zips nest everything inside a dynamic root folder named 'user-repo-hash'
-                        top_dir = zip_ref.namelist()[0].split("/")[0]
-                        
-                        temp_extract_path = os.path.join(BASE_WORKSPACE_DIR, f"temp_{unique_suffix}")
-                        zip_ref.extractall(temp_extract_path)
-                        
-                        # Flatten the nested root directory layout straight into your target path
-                        src_dir = os.path.join(temp_extract_path, top_dir)
-                        for item in os.listdir(src_dir):
-                            s = os.path.join(src_dir, item)
-                            d = os.path.join(target_directory_path, item)
-                            if os.path.isdir(s):
-                                shutil.copytree(s, d, dirs_exist_ok=True)
-                            else:
-                                shutil.copy2(s, d)
-                                
-                        # Clean up the intermediate temp folder
-                        shutil.rmtree(temp_extract_path, ignore_errors=True)
-
-                    st.session_state.agent_logs.append(f"🔌 Workspace compiled smoothly via native zip streaming.")
-                    
-                    # 🖥️ LOCAL-ONLY INTERFACE HOT-KEY: 
-                    # Only execute the desktop application hook if the runtime environment is running locally
-                    if "STREAMLIT_SERVER_ADDRESS" not in os.environ and "localhost" in st.get_option("browser.serverAddress"):
-                        try:
-                            import subprocess
-                            subprocess.Popen(["code", target_directory_path], shell=True)
-                            st.session_state.agent_logs.append("🖥️ Local VS Code workstation launched.")
-                        except Exception:
-                            pass
-                    
-                    st.session_state.repo_analysis_success = True
-                except Exception as e:
-                    st.error(f"Ingestion engine dropped exception: {str(e)}")
-                    st.session_state.repo_analysis_success = False
+            if is_already_cloned:
+                st.session_state.agent_logs.append("⚡ Repository targeted already exists and is populated. Synchronizing smoothly...")
+                st.session_state.repo_analysis_success = True
+            else:
+                with st.spinner(f"Cloning '{extracted_name}' cleanly into isolated workspace..."):
+                    from git import Repo
+                    import shutil
+                    try:
+                        if os.path.exists(target_directory_path):
+                            try: shutil.rmtree(target_directory_path, onerror=remove_readonly)
+                            except Exception: pass
+                            
+                        os.makedirs(target_directory_path, exist_ok=True)
+                        Repo.clone_from(remote_url, target_directory_path)
+                        os.system(f'code "{target_directory_path}"')
+                        st.session_state.agent_logs.append(f"🔌 VS Code Automation triggered safely.")
+                        st.session_state.repo_analysis_success = True
+                    except Exception as e:
+                        st.error(f"Clone routine dropped exception: {str(e)}")
+                        st.session_state.repo_analysis_success = False
             
             with st.spinner("Re-seeding local vector database..."):
                 from memory_engine import index_project_file
-                new_target_files = []
-                for root, _, files in os.walk(target_directory_path):
-                    for file in files:
-                        if file.endswith(('.py', '.js', '.ts', '.html', '.css', '.md', '.json')):
-                            new_target_files.append(os.path.join(root, file))
-                            
+                new_target_files = list_code_files()
                 for f_path in new_target_files:
                     try:
                         with open(f_path, 'r', encoding='utf-8') as f:
@@ -508,9 +432,7 @@ with st.sidebar:
         if "github_oauth_token" not in st.session_state:
             login_url = f"https://github.com/login/oauth/authorize?client_id={CLIENT_ID}&scope=repo"
             st.warning("Authentication Required to Deploy Changes.")
-            # 🎉 BREAK OUT OF THE IFRAME: Changing target to "_top" forces the browser 
-            # to open the GitHub login screen in a clean window baseline, solving the connection refusal.
-            st.markdown(f'<a href="{login_url}" target="_top"><button style="width:100%; height:40px; background-color:#24292e; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">🔗 Connect GitHub Account</button></a>', unsafe_allow_html=True)
+            st.markdown(f'<a href="{login_url}" target="_self"><button style="width:100%; height:40px; background-color:#24292e; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">🔗 Connect GitHub Account</button></a>', unsafe_allow_html=True)
         else:
             st.success("🔒 Authenticated via GitHub OAuth")
             if "messages" in st.session_state and st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
