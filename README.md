@@ -61,7 +61,7 @@ Follow these steps to run the project locally.
 ### 1. Clone the Repository
 
 ```bash
-ggit clone https://github.com/bunnny12345/CodeNexus.git
+git clone https://github.com/bunnny12345/CodeNexus.git
 ```
 
 ### 2. Navigate to the Project Directory
